@@ -142,7 +142,13 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         [InlineKeyboardButton("Team Game 👥", callback_data='team_game')],
         [InlineKeyboardButton("Cancel ❌", callback_data='cancel')]
     ]
-    await update.message.reply_text(welcome_text, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode='HTML')
+        await update.message.reply_photo(
+        photo='https://res.cloudinary.com/dxgfxfoog/image/upload/v1777650298/IMG_20260501_205353_176_runeav.jpg',
+        caption=welcome_text,
+        reply_markup=InlineKeyboardMarkup(keyboard),
+        parse_mode='HTML'
+        )
+
 
 
 async def join_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
