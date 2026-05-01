@@ -147,7 +147,8 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         caption=welcome_text,
         reply_markup=InlineKeyboardMarkup(keyboard),
         parse_mode='HTML'
-        )
+            )
+
 
 
 
