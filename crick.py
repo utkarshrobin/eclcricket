@@ -119,14 +119,20 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("❌ A match is already active in this group! Finish it or ask an admin to /endsolo first.")
         return
         
-    welcome_text = "Welcome to the <b>ELITE CRICKET BOT</b> Arena! 🏆\nJoin our official community at @eclplays. 🏏\n\nChoose your mode: 👇"
+            welcome_text = "Welcome to the <b>ELITE CRICKET BOT</b> Arena! 🏆\nJoin our official community at @eclplays. 🏏\n\nChoose your mode: 👇"
     keyboard = [
         [InlineKeyboardButton("Solo Game 🏏", callback_data='solo_game')],
         [InlineKeyboardButton("Team Game 👥", callback_data='team_game')],
         [InlineKeyboardButton("Cancel ❌", callback_data='cancel')]
     ]
-    await update.message.reply_text(welcome_text, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode='HTML')
-
+    await update.message.reply_photo(
+        photo='https://res.cloudinary.com/dxgfxfoog/image/upload/v1777650298/IMG_20260501_205353_176_runeav.jpg',
+        caption=welcome_text,
+        reply_markup=InlineKeyboardMarkup(keyboard),
+        parse_mode='HTML'
+    )
+    
+        
 
 async def join_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.message.chat.type == 'private': return
