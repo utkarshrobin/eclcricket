@@ -10,7 +10,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 # Replace with your actual bot token
 TOKEN = '8614255689:AAEhfHsuDwQdMrOHHhIeY7ud9mXomq2XmSI'
 # Replace with your actual MongoDB URI
-MONGO_URI = 'mongodb+srv://eclbot:ecl123@cluster0.eamckjk.mongodb.net/?appName=Cluster0'
+MONGO_URI = 'mongodb+srv://eclbot:eclbot123@cluster0.eamckjk.mongodb.net/?appName=Cluster0'
 
 if MONGO_URI:
     db_client = AsyncIOMotorClient(MONGO_URI)
