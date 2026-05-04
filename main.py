@@ -3,7 +3,6 @@ import time
 import random
 import asyncio
 from flask import Flask, request
-from threading import Thread
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, filters, ContextTypes
 from pymongo import MongoClient
@@ -1964,7 +1963,7 @@ async def handle_text_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 app = Application.builder().token(TOKEN).concurrent_updates(True).build()
 
-# handlers
+# HANDLERS
 app.add_handler(CommandHandler("start", start_command))
 app.add_handler(CommandHandler("join", join_command))
 app.add_handler(CommandHandler("add", add_command))
@@ -1992,10 +1991,10 @@ flask_app = Flask(__name__)
 
 @flask_app.route("/")
 def home():
-    return "ELITE CRICKET BOT is running!"
+    return "Bot running"
 
-@flask_app.post(f"/{TOKEN}")
-def webhook():
+@flask_app.route(f"/{TOKEN}", methods=["POST"])
+def telegram_webhook():
     update = Update.de_json(request.get_json(force=True), app.bot)
 
     async def process():
