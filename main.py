@@ -2,6 +2,8 @@ import os
 import time
 import random
 import asyncio
+from flask import Flask
+from threading import Thread
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, filters, ContextTypes
 from pymongo import MongoClient
@@ -1960,14 +1962,28 @@ async def handle_text_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await asyncio.sleep(0.3)
             await trigger_bowl(context, chat_id)
 
+health_app = Flask(__name__)
+
+@health_app.route("/")
+def home():
+    return "ELITE CRICKET BOT is running!"
+
+def run_health():
+    health_app.run(
+        host="0.0.0.0",
+        port=int(os.environ.get("PORT", 8080))
+    )
+
+# -----------------------------
+# MAIN
+# -----------------------------
 if __name__ == '__main__':
     print("Starting ELITE CRICKET BOT Server with Webhooks...")
-    
-    # We will keep your token hardcoded right here for your deployment
-    TOKEN = "8614255689:AAF1pddy-Ucl634jqHNsmmq_rSAsUhIZTqY"
-    
-    app = Application.builder().token(TOKEN).build()
-    
+
+    TOKEN = os.getenv("BOT_TOKEN")
+
+    app = Application.builder().token(TOKEN).concurrent_updates(True).build()
+
     app.add_handler(CommandHandler("start", start_command))
     app.add_handler(CommandHandler("join", join_command))
     app.add_handler(CommandHandler("add", add_command))
@@ -1985,18 +2001,25 @@ if __name__ == '__main__':
     app.add_handler(CommandHandler("batting", batting_command))
     app.add_handler(CommandHandler("bowling", bowling_command))
     app.add_handler(CommandHandler("userstats", userstats_command))
+
     app.add_handler(CallbackQueryHandler(button_click))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text_input))
-    
-    # Webhook setup for cloud deployments
-    PORT = int(os.environ.get('PORT', 8080))
+    app.add_handler(
+        MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text_input)
+    )
+
     WEBHOOK_URL = "https://eclcricket.railway.app"
-    
-    print(f"Setting up webhook on port {PORT} with URL {WEBHOOK_URL}...")
-    
+
+    print("Starting Railway health server...")
+    Thread(target=run_health).start()
+
+    print("Starting Telegram webhook...")
+
     app.run_webhook(
         listen="0.0.0.0",
-        port=PORT,
-        url_path=TOKEN,  # This is the critical line that fixes the 404 error!
-        webhook_url=f"{WEBHOOK_URL}/{TOKEN}"
+        port=8443,
+        url_path=TOKEN,
+        webhook_url=f"{WEBHOOK_URL}/{TOKEN}",
+        allowed_updates=Update.ALL_TYPES,
+        drop_pending_updates=True,
+        close_loop=False,
     )
