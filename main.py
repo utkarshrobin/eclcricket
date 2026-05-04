@@ -3,6 +3,7 @@ import time
 import random
 import asyncio
 from flask import Flask, request
+from threading import Thread
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, filters, ContextTypes
 from pymongo import MongoClient
@@ -2008,5 +2009,6 @@ def telegram_webhook():
 if __name__ == "__main__":
     flask_app.run(
         host="0.0.0.0",
-        port=int(os.environ.get("PORT", 8080))
-)
+        port=int(os.environ.get("PORT", 8080)),
+        threaded=True
+    )
