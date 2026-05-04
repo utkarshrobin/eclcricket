@@ -2,7 +2,7 @@ import os
 import time
 import random
 import asyncio
-from flask import Flask
+from flask import Flask, request
 from threading import Thread
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, filters, ContextTypes
@@ -1962,64 +1962,52 @@ async def handle_text_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await asyncio.sleep(0.3)
             await trigger_bowl(context, chat_id)
 
-health_app = Flask(__name__)
+app = Application.builder().token(TOKEN).concurrent_updates(True).build()
 
-@health_app.route("/")
+# handlers
+app.add_handler(CommandHandler("start", start_command))
+app.add_handler(CommandHandler("join", join_command))
+app.add_handler(CommandHandler("add", add_command))
+app.add_handler(CommandHandler("remove", remove_command))
+app.add_handler(CommandHandler("changehost", changehost_command))
+app.add_handler(CommandHandler("changecap", changecap_command))
+app.add_handler(CommandHandler("create_team", create_team_command))
+app.add_handler(CommandHandler("rejoin", rejoin_command))
+app.add_handler(CommandHandler("leavesolo", leavesolo_command))
+app.add_handler(CommandHandler("startsolo", startsolo_command))
+app.add_handler(CommandHandler("endmatch", endmatch_command))
+app.add_handler(CommandHandler("soloscore", soloscore_command))
+app.add_handler(CommandHandler("score", teamscore_command))
+app.add_handler(CommandHandler("teams", teams_command))
+app.add_handler(CommandHandler("batting", batting_command))
+app.add_handler(CommandHandler("bowling", bowling_command))
+app.add_handler(CommandHandler("userstats", userstats_command))
+
+app.add_handler(CallbackQueryHandler(button_click))
+app.add_handler(
+    MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text_input)
+)
+
+flask_app = Flask(__name__)
+
+@flask_app.route("/")
 def home():
     return "ELITE CRICKET BOT is running!"
 
-def run_health():
-    health_app.run(
+@flask_app.post(f"/{TOKEN}")
+def webhook():
+    update = Update.de_json(request.get_json(force=True), app.bot)
+
+    async def process():
+        await app.initialize()
+        await app.process_update(update)
+
+    asyncio.run(process())
+
+    return "ok"
+
+if __name__ == "__main__":
+    flask_app.run(
         host="0.0.0.0",
         port=int(os.environ.get("PORT", 8080))
-    )
-
-# -----------------------------
-# MAIN
-# -----------------------------
-if __name__ == '__main__':
-    print("Starting ELITE CRICKET BOT Server with Webhooks...")
-
-    TOKEN = os.getenv("BOT_TOKEN")
-
-    app = Application.builder().token(TOKEN).concurrent_updates(True).build()
-
-    app.add_handler(CommandHandler("start", start_command))
-    app.add_handler(CommandHandler("join", join_command))
-    app.add_handler(CommandHandler("add", add_command))
-    app.add_handler(CommandHandler("remove", remove_command))
-    app.add_handler(CommandHandler("changehost", changehost_command))
-    app.add_handler(CommandHandler("changecap", changecap_command))
-    app.add_handler(CommandHandler("create_team", create_team_command))
-    app.add_handler(CommandHandler("rejoin", rejoin_command))
-    app.add_handler(CommandHandler("leavesolo", leavesolo_command))
-    app.add_handler(CommandHandler("startsolo", startsolo_command))
-    app.add_handler(CommandHandler("endmatch", endmatch_command))
-    app.add_handler(CommandHandler("soloscore", soloscore_command))
-    app.add_handler(CommandHandler("score", teamscore_command))
-    app.add_handler(CommandHandler("teams", teams_command))
-    app.add_handler(CommandHandler("batting", batting_command))
-    app.add_handler(CommandHandler("bowling", bowling_command))
-    app.add_handler(CommandHandler("userstats", userstats_command))
-
-    app.add_handler(CallbackQueryHandler(button_click))
-    app.add_handler(
-        MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text_input)
-    )
-
-    WEBHOOK_URL = "https://eclcricket.railway.app"
-
-    print("Starting Railway health server...")
-    Thread(target=run_health).start()
-
-    print("Starting Telegram webhook...")
-
-    app.run_webhook(
-        listen="0.0.0.0",
-        port=8443,
-        url_path=TOKEN,
-        webhook_url=f"{WEBHOOK_URL}/{TOKEN}",
-        allowed_updates=Update.ALL_TYPES,
-        drop_pending_updates=True,
-        close_loop=False,
-    )
+)
