@@ -1,4 +1,4 @@
-
+import os
 import random
 import asyncio
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
@@ -6,9 +6,9 @@ from telegram.ext import Application, CommandHandler, CallbackQueryHandler, Mess
 from pymongo import MongoClient
 
 # Replace with your actual bot token
-TOKEN = '8614255689:AAEhfHsuDwQdMrOHHhIeY7ud9mXomq2XmSI'
+TOKEN = os.getenv("BOT_TOKEN")
 # Replace with your MongoDB URI
-MONGO_URI = 'mongodb+srv://eclbot:eclbot1234@cluster0.eamckjk.mongodb.net/?appName=Cluster0'
+MONGO_URI = os.getenv("MONGO_URI")
 
 # MongoDB Setup
 try:
