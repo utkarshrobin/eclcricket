@@ -1990,9 +1990,10 @@ if __name__ == '__main__':
     if WEBHOOK_URL:
         print(f"Starting webhooks on port {PORT}...")
         app.run_webhook(
-            listen="0.0.0.0",
-            port=PORT,
-            webhook_url=WEBHOOK_URL
+    listen="0.0.0.0",
+    port=PORT,
+    webhook_url=f"{WEBHOOK_URL}/{TOKEN}",
+    url_path=TOKEN,
         )
     else:
         print("WEBHOOK_URL not found. Falling back to polling...")
