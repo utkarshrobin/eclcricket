@@ -1957,12 +1957,17 @@ async def handle_text_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 game["waiting_for"] = "BOWLER"
                 
         if game["state"] == "PLAYING" and game.get("waiting_for") == "BOWLER":
-            await asyncio.sleep(0.3)
+            await asyncio.sleep(0.05)
             await trigger_bowl(context, chat_id)
 
 if __name__ == '__main__':
     print("Starting ELITE CRICKET BOT Server...")
-    app = Application.builder().token(TOKEN).build()
+    app = (
+    Application.builder()
+    .token(TOKEN)
+    .concurrent_updates(True)
+    .build()
+    )
     
     app.add_handler(CommandHandler("start", start_command))
     app.add_handler(CommandHandler("join", join_command))
@@ -1984,4 +1989,8 @@ if __name__ == '__main__':
     app.add_handler(CallbackQueryHandler(button_click))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text_input))
     
-    app.run_polling(poll_interval=1.0)
+    app.run_polling(
+    poll_interval=0.1,
+    timeout=10,
+    drop_pending_updates=True
+    )
