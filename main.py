@@ -1962,6 +1962,10 @@ async def handle_text_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 if __name__ == '__main__':
     print("Starting ELITE CRICKET BOT Server with Webhooks...")
+    
+    # Cleans any invisible spaces from your environment variable
+    TOKEN = os.getenv("BOT_TOKEN", "").strip() 
+    
     app = Application.builder().token(TOKEN).build()
     
     app.add_handler(CommandHandler("start", start_command))
@@ -1986,15 +1990,16 @@ if __name__ == '__main__':
     
     # Webhook setup for cloud deployments
     PORT = int(os.environ.get('PORT', 8080))
-    # Replace 'YOUR_APP_URL_HERE' with your actual deployment URL (e.g., https://your-app.up.railway.app)
-    # Alternatively, you can set WEBHOOK_URL in your hosting platform's environment variables.
-    WEBHOOK_URL = os.environ.get('WEBHOOK_URL', 'YOUR_APP_URL_HERE') 
+    
+    # Safely get the URL and remove any accidental trailing slashes
+    WEBHOOK_URL = os.environ.get('WEBHOOK_URL', 'https://eclcricket.railway.app').rstrip('/')
     
     print(f"Setting up webhook on port {PORT} with URL {WEBHOOK_URL}...")
     
+    # Letting the library automatically handle the URL path mapping
     app.run_webhook(
         listen="0.0.0.0",
         port=PORT,
-        url_path=TOKEN,
         webhook_url=f"{WEBHOOK_URL}/{TOKEN}"
     )
+    
