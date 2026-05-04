@@ -1986,28 +1986,23 @@ if __name__ == '__main__':
     
     if __name__ == '__main__':
     print("Starting ELITE CRICKET BOT Server...")
-    app = Application.builder().token(TOKEN).build()
-    
-    # ... [Keep all your existing app.add_handler lines here] ...
-    
-    # -----------------------------------------
-    # WEBHOOK CONFIGURATION
-    # -----------------------------------------
-    # Railway assigns a dynamic port, default to 8443 if running locally
-    PORT = int(os.environ.get("PORT", 8443))
-    
-    # You need to set this in your Railway Environment Variables
-    # Example: https://your-cricket-bot.up.railway.app
-    WEBHOOK_URL = os.getenv("WEBHOOK_URL") 
-    
+
+    PORT = int(os.environ.get("PORT", 8080))
+    WEBHOOK_URL = os.getenv("WEBHOOK_URL")
+
     if WEBHOOK_URL:
-        print(f"Starting webhooks on port {PORT}...")
+        print(f"Starting webhook on port {PORT}...")
+
         app.run_webhook(
             listen="0.0.0.0",
             port=PORT,
-            webhook_url=WEBHOOK_URL
+            webhook_url=f"{WEBHOOK_URL}/{TOKEN}",
+            url_path=TOKEN,
         )
+
     else:
         print("WEBHOOK_URL not found. Falling back to polling...")
-        app.run_polling(poll_interval=1.0)
-    
+
+        app.run_polling(
+            poll_interval=1.0
+        )
