@@ -1963,8 +1963,8 @@ async def handle_text_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
 if __name__ == '__main__':
     print("Starting ELITE CRICKET BOT Server with Webhooks...")
     
-    # Cleans any invisible spaces from your environment variable
-    TOKEN = os.getenv("BOT_TOKEN", "").strip() 
+    # We will keep your token hardcoded right here for your deployment
+    TOKEN = "8614255689:AAF1pddy-Ucl634jqHNsmmq_rSAsUhIZTqY"
     
     app = Application.builder().token(TOKEN).build()
     
@@ -1990,16 +1990,13 @@ if __name__ == '__main__':
     
     # Webhook setup for cloud deployments
     PORT = int(os.environ.get('PORT', 8080))
-    
-    # Safely get the URL and remove any accidental trailing slashes
-    WEBHOOK_URL = os.environ.get('WEBHOOK_URL', 'https://eclcricket.railway.app').rstrip('/')
+    WEBHOOK_URL = "https://eclcricket.railway.app"
     
     print(f"Setting up webhook on port {PORT} with URL {WEBHOOK_URL}...")
     
-    # Letting the library automatically handle the URL path mapping
     app.run_webhook(
         listen="0.0.0.0",
         port=PORT,
+        url_path=TOKEN,  # This is the critical line that fixes the 404 error!
         webhook_url=f"{WEBHOOK_URL}/{TOKEN}"
     )
-    
