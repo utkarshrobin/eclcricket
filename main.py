@@ -51,6 +51,12 @@ def get_user_level(exp):
     elif exp <= 8000: return "Legendary 🌟"
     else: return "Unbeaten 👑"
 
+def get_next_level_info(exp):
+    if exp < 1000: return "Pro ⚡", 1000 - exp
+    elif exp <= 5000: return "Legendary 🌟", 5001 - exp
+    elif exp <= 8000: return "Unbeaten 👑", 8001 - exp
+    else: return None, 0
+
 async def global_tracker(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if chats_col is not None and update.effective_chat:
         try:
@@ -101,6 +107,12 @@ async def init_user_db(user_id, first_name, username):
             "centuries": 0, "half_centuries": 0, "ducks": 0, "balls_bowled": 0,
             "runs_conceded": 0, "wickets": 0, "motm": 0, "hat_tricks": 0
         })
+    else:
+        update_fields = {}
+        if user.get("first_name") != first_name: update_fields["first_name"] = first_name
+        if username and user.get("username") != username: update_fields["username"] = username
+        if update_fields:
+            await users_col.update_one({"user_id": user_id}, {"$set": update_fields})
 
 async def update_user_db(user_id, updates):
     if users_col is None: return
@@ -433,8 +445,8 @@ async def team_afk_timeout(context: ContextTypes.DEFAULT_TYPE):
     
     if role == "BATTER":
         dismiss_batter(game, player)
-        game["batting_team_ref"]["score"] -= 5
-        player["runs"] -= 5
+        game["batting_team_ref"]["score"] = max(0, game["batting_team_ref"]["score"] - 5)
+        player["runs"] = max(0, player.get("runs", 0) - 5)
         game["batting_team_ref"]["wickets"] += 1
         await context.bot.send_message(chat_id, f"⏳ <b>TIME'S UP!</b> {player['name']} was AFK for 60 seconds! ❌\n📉 <b>PENALTY:</b> -5 Runs to the team and batter! They are OUT!", parse_mode="HTML")
         if game["batting_team_ref"]["wickets"] >= len(game["batting_team_ref"]["players"]) - 1:
@@ -445,9 +457,12 @@ async def team_afk_timeout(context: ContextTypes.DEFAULT_TYPE):
     elif role == "BOWLER":
         game["batting_team_ref"]["score"] += 5
         player["conceded"] += 5
+        await context.bot.send_message(chat_id, f"⏳ <b>TIME'S UP!</b> {player['name']} timed out! ❌\n📈 <b>PENALTY:</b> +5 Runs to Batting Team!\nCaptain/Host, please select a NEW bowler to continue the over using <code>/bowling [number]</code>.", parse_mode="HTML")
+        if game.get("innings") == 2 and game["batting_team_ref"]["score"] >= game["target"]:
+            await process_team_innings_end(context, chat_id, game)
+            return
         game["waiting_for"] = "TEAM_BOWLER_SELECT"
         game["last_bowler_id"] = player["id"]
-        await context.bot.send_message(chat_id, f"⏳ <b>TIME'S UP!</b> {player['name']} timed out! ❌\n📈 <b>PENALTY:</b> +5 Runs to Batting Team!\nCaptain/Host, please select a NEW bowler to continue the over using <code>/bowling [number]</code>.", parse_mode="HTML")
 
 async def queue_reminder(context: ContextTypes.DEFAULT_TYPE):
     chat_id = context.job.data["chat_id"]
@@ -1205,11 +1220,17 @@ async def userstats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
         exp = user_data.get("exp", 0)
         level = get_user_level(exp)
+        next_level_name, exp_needed = get_next_level_info(exp)
         outs = max(1, user_data.get("team_matches", 0) + user_data.get("solo_matches", 0) - user_data.get("ducks", 0))
         avg = total_runs / outs if total_runs > 0 else 0
 
+        if next_level_name:
+            exp_line = f"⭐ <b>EXP:</b> {exp} | Next: <b>{next_level_name}</b> (Need {exp_needed} more EXP)\n"
+        else:
+            exp_line = f"⭐ <b>EXP:</b> {exp} | 🏆 <b>MAX LEVEL REACHED!</b>\n"
+
         stats_text = f"📊 <b>{level} STATISTICS</b> 📊\n═══════════════════════════\n"
-        stats_text += f"👤 <b>Name:</b> {user_data.get('first_name', 'Unknown')}\n🆔 <b>ID:</b> <code>{user_data.get('user_id', 'Unknown')}</code>\n┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈\n"
+        stats_text += f"👤 <b>Name:</b> {user_data.get('first_name', 'Unknown')}\n🆔 <b>ID:</b> <code>{user_data.get('user_id', 'Unknown')}</code>\n{exp_line}┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈\n"
         stats_text += f"🏏 <b>BATTING STATS</b>\n🔸 <b>Highest Score:</b> {hs_runs} ({hs_balls})\n🔸 <b>Total Runs:</b> {total_runs}\n🔸 <b>Batting Avg:</b> {avg:.2f} | <b>Strike Rate:</b> {sr:.2f}\n"
         stats_text += f"🔸 <b>6s:</b> {user_data.get('total_6s', 0)} | <b>4s:</b> {user_data.get('total_4s', 0)}\n🔸 <b>100s:</b> {user_data.get('centuries', 0)} | <b>50s:</b> {user_data.get('half_centuries', 0)}\n"
         stats_text += f"🔸 <b>Ducks 🦆:</b> {user_data.get('ducks', 0)}\n┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈\n"
@@ -1351,6 +1372,10 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await context.bot.send_photo(chat_id=chat_id, photo="https://res.cloudinary.com/dxgfxfoog/image/upload/v1777720311/file_00000000332072078d00837e7d719f5e_ybg18b.png", caption=text, parse_mode="HTML", reply_markup=InlineKeyboardMarkup(kb))
 
     elif query.data == "host_banunga":
+        if game.get("state") == "TEAM_SETUP_HOST":
+            try: await query.answer("❌ A host has already been selected for this match!", show_alert=True)
+            except: pass
+            return
         if is_user_playing_anywhere(context, user_id):
             try: await query.answer("❌ you are already in a game or in a queue in either this or other group", show_alert=True)
             except: await context.bot.send_message(chat_id, "❌ you are already in a game or in a queue in either this or other group")
@@ -1637,11 +1662,9 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
         pipeline_bowl = [
             {"$match": {wkt_field: {"$gt": 0}}},
             {"$addFields": {
-                "overs": {"$divide": [f"${bb_field}", 6]},
-                "wpo": {"$cond": [{"$gt": [f"${bb_field}", 0]}, {"$divide": [f"${wkt_field}", {"$divide": [f"${bb_field}", 6]}]}, 0]},
-                "eco": {"$cond": [{"$gt": [f"${bb_field}", 0]}, {"$multiply": [{"$divide": [f"${rc_field}", f"${bb_field}"]}, 6]}, 0]}
+                "eco": {"$cond": [{"$gt": [f"${bb_field}", 0]}, {"$multiply": [{"$divide": [f"${rc_field}", f"${bb_field}"]}, 6]}, 999]}
             }},
-            {"$sort": {"wpo": -1, "eco": 1}},
+            {"$sort": {wkt_field: -1, "eco": 1}},
             {"$limit": 5}
         ]
         top_bowlers = await users_col.aggregate(pipeline_bowl).to_list(5)
@@ -1660,7 +1683,7 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
         text += "\n🥎 <b>TOP 5 BOWLERS</b>\n"
         for i, b in enumerate(top_bowlers, 1):
             lvl = get_user_level(b.get("exp", 0))
-            text += f"{i}. {b.get('first_name', 'Unknown')} [{lvl}] - <b>{b.get(wkt_field, 0)} Wkts</b> (W/O: {b.get('wpo', 0):.1f})\n"
+            text += f"{i}. {b.get('first_name', 'Unknown')} [{lvl}] - <b>{b.get(wkt_field, 0)} Wkts</b> (Eco: {b.get('eco', 0):.2f})\n"
             
         kb = [[InlineKeyboardButton("Back 🔙", callback_data="lb_back")]]
         try: await query.edit_message_text(text, parse_mode="HTML", reply_markup=InlineKeyboardMarkup(kb))
