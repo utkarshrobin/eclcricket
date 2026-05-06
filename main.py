@@ -267,6 +267,48 @@ def generate_team_scorecard(game):
         text += "━━━━━━━━━━━━━━━━━━━━━━
 "
         
+def generate_team_scorecard(game):
+    text = "🏆 <b>MATCH SCORECARD</b> 🏆\n━━━━━━━━━━━━━━━━━━━━━━\n"
+    
+    if game.get("innings") == 2 and game.get("state") != "TEAM_FINISHED":
+        target = game["target"]
+        runs_needed = target - game["batting_team_ref"]["score"]
+        balls_rem = (game["target_overs"] * 6) - game["bowling_team_ref"]["balls_bowled"]
+        overs_left = balls_rem / 6
+        rrr = (runs_needed / overs_left) if overs_left > 0 else 0.0
+        
+        text += f"🎯 <b>Target:</b> {target} | Need <b>{max(0, runs_needed)}</b> runs in <b>{balls_rem}</b> balls.\n"
+        text += f"📈 <b>Required Run Rate (RRR):</b> {rrr:.2f}\n━━━━━━━━━━━━━━━━━━━━━━\n"
+        
+    for team_key, team_name in [("team_a", "🔴 TEAM A"), ("team_b", "🔵 TEAM B")]:
+        team = game.get(team_key)
+        if not team: continue
+        
+        opp_team = game.get("team_b" if team_key == "team_a" else "team_a")
+        played_balls = opp_team["balls_bowled"] if opp_team else 0
+        played_overs, rem_balls = divmod(played_balls, 6)
+        total_overs_played = played_overs + (rem_balls / 6)
+        rr = (team["score"] / total_overs_played) if total_overs_played > 0 else 0.0
+        
+        text += f"🎖️ <b>{team_name}</b> ➜ <b>{team['score']}/{team['wickets']}</b> <i>({played_overs}.{rem_balls} Ov)</i> | <b>RR: {rr:.2f}</b>\n\n"
+        
+        batters_txt = ""
+        for p in team["players"]:
+            if p["balls_faced"] > 0 or p.get("is_striker") or p.get("is_non_striker") or p.get("is_out"):
+                status = "❌" if p.get("is_out") else "🏏"
+                sr = (p["runs"] / p["balls_faced"] * 100) if p["balls_faced"] > 0 else 0.0
+                batters_txt += f"  {status} {p['name'][:12]} ➜ <b>{p['runs']}</b> ({p['balls_faced']}) [SR: {sr:.1f}]\n"
+        if batters_txt: text += f"<i>Batters:</i>\n{batters_txt}\n"
+            
+        bowlers_txt = ""
+        for p in team["players"]:
+            if p["balls_bowled"] > 0:
+                p_ov, p_bl = divmod(p["balls_bowled"], 6)
+                eco = (p["conceded"] / p["balls_bowled"]) * 6
+                bowlers_txt += f"  🥎 {p['name'][:12]} ➜ {p_ov}.{p_bl} Ov | <b>{p['conceded']}R</b> | <b>{p['wickets']}W</b> [Eco: {eco:.1f}]\n"
+        if bowlers_txt: text += f"<i>Bowlers:</i>\n{bowlers_txt}"
+        text += "━━━━━━━━━━━━━━━━━━━━━━\n"
+        
     if game["state"] == "TEAM_FINISHED":
         team_a_score = game["team_a"]["score"]
         team_b_score = game["team_b"]["score"]
@@ -274,28 +316,23 @@ def generate_team_scorecard(game):
         if team_a_score > team_b_score:
             if game["batting_team_ref"] == game["team_a"] and game["innings"] == 2:
                 wickets_left = (len(game["team_a"]["players"]) - 1) - game["team_a"]["wickets"]
-                result_str = f"🎉 <b>Team A 🔴 WINS by {wickets_left} wickets!</b>
-"
+                result_str = f"🎉 <b>Team A 🔴 WINS by {wickets_left} wickets!</b>\n"
             else:
                 run_diff = team_a_score - team_b_score
-                result_str = f"🎉 <b>Team A 🔴 WINS by {run_diff} runs!</b>
-"
+                result_str = f"🎉 <b>Team A 🔴 WINS by {run_diff} runs!</b>\n"
         elif team_b_score > team_a_score:
              if game["batting_team_ref"] == game["team_b"] and game["innings"] == 2:
                 wickets_left = (len(game["team_b"]["players"]) - 1) - game["team_b"]["wickets"]
-                result_str = f"🎉 <b>Team B 🔵 WINS by {wickets_left} wickets!</b>
-"
+                result_str = f"🎉 <b>Team B 🔵 WINS by {wickets_left} wickets!</b>\n"
              else:
                 run_diff = team_b_score - team_a_score
-                result_str = f"🎉 <b>Team B 🔵 WINS by {run_diff} runs!</b>
-"
+                result_str = f"🎉 <b>Team B 🔵 WINS by {run_diff} runs!</b>\n"
         else:
-            result_str = "🤝 <b>IT'S A TIE!</b> 🤝
-"
+            result_str = "🤝 <b>IT'S A TIE!</b> 🤝\n"
 
-        text += result_str + "━━━━━━━━━━━━━━━━━━━━━━
-"
+        text += result_str + "━━━━━━━━━━━━━━━━━━━━━━\n"
     return text
+
 
 def get_potm(game):
     best_player = get_potm_data(game)
