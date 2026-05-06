@@ -216,7 +216,7 @@ def dismiss_batter(game, batter):
 def generate_scorecard(game):
     if game.get("mode") == "TEAM": return generate_team_scorecard(game)
     text = "📊 <b>SOLO SCORECARD</b> 📊
-━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━"
 "
     for p in game["players"]:
         overs, balls = divmod(p["balls_bowled"], 6)
