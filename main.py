@@ -203,19 +203,14 @@ def dismiss_batter(game, batter):
 
 def generate_scorecard(game):
     if game.get("mode") == "TEAM": return generate_team_scorecard(game)
-    text = "📊 <b>SOLO SCORECARD</b> 📊
-━━━━━━━━━━━━━━━━━━━━━━
-"
+    text = "📊 <b>SOLO SCORECARD</b> 📊\n━━━━━━━━━━━━━━━━━━━━━━\n"
     for p in game["players"]:
         overs, balls = divmod(p["balls_bowled"], 6)
         eco = (p["conceded"] / p["balls_bowled"]) * 6 if p["balls_bowled"] > 0 else 0.00
-        text += f"👤 <b>{p['name']}</b>
-  🏏 Bat: <b>{p['runs']}</b> ({p['balls_faced']})
-"
-        text += f"  🥎 Bowl: <b>{p['wickets']}</b>W | {p['conceded']}R | {overs}.{balls} Ov (Eco: {eco:.1f})
-┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈
-"
+        text += f"👤 <b>{p['name']}</b>\n  🏏 Bat: <b>{p['runs']}</b> ({p['balls_faced']})\n"
+        text += f"  🥎 Bowl: <b>{p['wickets']}</b>W | {p['conceded']}R | {overs}.{balls} Ov (Eco: {eco:.1f})\n┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈\n"
     return text
+
 
 def generate_team_scorecard(game):
     text = "🏆 <b>MATCH SCORECARD</b> 🏆
