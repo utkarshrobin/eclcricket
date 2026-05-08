@@ -4,3 +4,5 @@ apscheduler
 motor
 certifi
 pillow
+pillow
+
